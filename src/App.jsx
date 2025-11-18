@@ -1,71 +1,72 @@
+import { useState } from 'react'
+import Hero from './components/Hero'
+import Products from './components/Products'
+import Cart from './components/Cart'
+
 function App() {
+  const [cart, setCart] = useState([])
+  const backend = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'
+
+  const handleAdd = (product) => {
+    setCart((prev) => {
+      const exists = prev.find((i) => i.id === product.id)
+      if (exists) {
+        return prev.map((i) => (i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i))
+      }
+      return [...prev, { ...product, product_id: product.id, quantity: 1 }]
+    })
+  }
+
+  const handleUpdateQty = (id, qty) => {
+    setCart((prev) => prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i)))
+  }
+
+  const handleCheckout = async () => {
+    const payload = {
+      name: 'Guest',
+      email: 'guest@example.com',
+      address: '123 Gaming Street',
+      items: cart.map((i) => ({
+        product_id: i.product_id || i.id,
+        title: i.title,
+        price: i.price,
+        quantity: i.quantity,
+        image: i.image,
+      })),
+    }
+    try {
+      const res = await fetch(`${backend}/api/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      const data = await res.json()
+      alert(`Commande confirmée. Total: $${data.total}. ID: ${data.order_id}`)
+      setCart([])
+    } catch (e) {
+      alert('Erreur lors de la commande')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]"></div>
-
-      <div className="relative min-h-screen flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full">
-          {/* Header with Flames icon */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-6">
-              <img
-                src="/flame-icon.svg"
-                alt="Flames"
-                className="w-24 h-24 drop-shadow-[0_0_25px_rgba(59,130,246,0.5)]"
-              />
-            </div>
-
-            <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
-              Flames Blue
-            </h1>
-
-            <p className="text-xl text-blue-200 mb-6">
-              Build applications through conversation
-            </p>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]" />
+      <header className="relative z-10">
+        <Hero />
+      </header>
+      <main className="relative z-10">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <Products onAdd={handleAdd} />
           </div>
-
-          {/* Instructions */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-8 shadow-xl mb-6">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                1
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Describe your idea</h3>
-                <p className="text-blue-200/80 text-sm">Use the chat panel on the left to tell the AI what you want to build</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Watch it build</h3>
-                <p className="text-blue-200/80 text-sm">Your app will appear in this preview as the AI generates the code</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Refine and iterate</h3>
-                <p className="text-blue-200/80 text-sm">Continue the conversation to add features and make changes</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center">
-            <p className="text-sm text-blue-300/60">
-              No coding required • Just describe what you want
-            </p>
+          <div>
+            <Cart items={cart} onUpdateQty={handleUpdateQty} onCheckout={handleCheckout} />
           </div>
         </div>
-      </div>
+      </main>
+      <footer className="relative z-10 mt-16 py-8 text-center text-blue-200/70">
+        © {new Date().getFullYear()} Gaming Shop • Propulsé par Flames Blue
+      </footer>
     </div>
   )
 }
